@@ -33,7 +33,8 @@ export const trackQuizStep = (step: string, data?: QuizStepData) => {
   // Track quiz events with Utmify
   if (typeof window !== 'undefined' && window.pixelId) {
     try {
-      fetch(`https://api.utmify.com.br/tracking/v1/events`, {
+      const apiUrl = process.env.NEXT_PUBLIC_UTMIFY_API_URL || 'https://api.utmify.com.br';
+      fetch(`${apiUrl}/tracking/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,9 +47,16 @@ export const trackQuizStep = (step: string, data?: QuizStepData) => {
             data: data
           }
         })
-      }).catch(error => console.log('Utmify quiz tracking error:', error));
+      }).catch(error => {
+        // Silently handle tracking errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Utmify quiz tracking error (development):', error.message);
+        }
+      });
     } catch (error) {
-      console.log('Utmify quiz tracking error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Utmify quiz tracking error (development):', error);
+      }
     }
   }
 };
@@ -64,7 +72,8 @@ export const trackQuizCompletion = (result: QuizResult) => {
   // Track quiz completion with Utmify
   if (typeof window !== 'undefined' && window.pixelId) {
     try {
-      fetch(`https://api.utmify.com.br/tracking/v1/events`, {
+      const apiUrl = process.env.NEXT_PUBLIC_UTMIFY_API_URL || 'https://api.utmify.com.br';
+      fetch(`${apiUrl}/tracking/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,9 +85,16 @@ export const trackQuizCompletion = (result: QuizResult) => {
             result: result
           }
         })
-      }).catch(error => console.log('Utmify quiz completion tracking error:', error));
+      }).catch(error => {
+        // Silently handle tracking errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Utmify quiz completion tracking error (development):', error.message);
+        }
+      });
     } catch (error) {
-      console.log('Utmify quiz completion tracking error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Utmify quiz completion tracking error (development):', error);
+      }
     }
   }
 };

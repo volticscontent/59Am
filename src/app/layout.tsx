@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
+import { UTMProvider } from "@/contexts/UTMContext";
 import CartSidebar from "@/components/CartSidebar";
 
 // Configuração das fontes otimizadas
@@ -20,6 +21,11 @@ const nunitoSans = Nunito_Sans({
 export const metadata: Metadata = {
   title: "Perfumes Alemanha",
   description: "Loja de perfumes importados da Alemanha",
+  icons: {
+    icon: "/favico.png",
+    shortcut: "/favico.png",
+    apple: "/favico.png",
+  },
 };
 
 export default function RootLayout({
@@ -27,71 +33,73 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const utmifyPixelId = process.env.NEXT_PUBLIC_UTMIFY_PIXEL_ID;
+
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${inter.variable} ${nunitoSans.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-        
         {/* Meta Pixel Code */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '1882441755676353');
-              fbq('track', 'PageView');
-            `,
-          }}
-        />
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src="https://www.facebook.com/tr?id=1882441755676353&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        {metaPixelId && (
+          <>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  !function(f,b,e,v,n,t,s)
+                  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                  n.queue=[];t=b.createElement(e);t.async=!0;
+                  t.src=v;s=b.getElementsByTagName(e)[0];
+                  s.parentNode.insertBefore(t,s)}(window, document,'script',
+                  'https://connect.facebook.net/en_US/fbevents.js');
+                  fbq('init', '${metaPixelId}');
+                  fbq('track', 'QPageView');
+                `,
+              }}
+            />
+            <noscript>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                height={1}
+                width={1}
+                style={{ display: 'none' }}
+                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=QPageView&noscript=1`}
+                alt=""
+              />
+            </noscript>
+          </>
+        )}
         
         {/* Utmify Pixel Script */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.pixelId = "68cc684e0b82fb79eb53e0fe";
-              var a = document.createElement("script");
-              a.setAttribute("async", "");
-              a.setAttribute("defer", "");
-              a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
-              document.head.appendChild(a);
-            `,
-          }}
-        />
+        {utmifyPixelId && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.pixelId = "${utmifyPixelId}";
+                var a = document.createElement("script");
+                a.setAttribute("async", "");
+                a.setAttribute("defer", "");
+                a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+                document.head.appendChild(a);
+              `,
+            }}
+          />
+        )}
         
-        {/* Utmify UTM Script */}
-        <script
-          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-          data-utmify-prevent-xcod-sck=""
-          data-utmify-prevent-subids=""
-          async
-          defer
-        />
       </head>
-      <body className={`${inter.variable} ${nunitoSans.variable} antialiased font-sans`}>
-        <CartProvider>
-          {children}
-          <CartSidebar />
-        </CartProvider>
+      <body className="antialiased font-sans">
+        <UTMProvider
+          enableGA4={false}
+          enableMetaPixel={true}
+          enableUtmify={true}
+          enableConsoleLog={true}
+        >
+          <CartProvider>
+            {children}
+            <CartSidebar />
+          </CartProvider>
+        </UTMProvider>
       </body>
     </html>
   );

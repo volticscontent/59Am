@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import CategoryCarousel from '../components/CategoryCarousel';
 import FilterSidebar from '../components/FilterSidebar';
@@ -24,29 +24,7 @@ export default function Home() {
     promotion: false
   });
 
-  useEffect(() => {
-    const data = getProductData();
-    setProductData(data);
-    if (data) {
-      applyFiltersAndSearch(filters, searchQuery);
-    }
-  }, []);
-
-  useEffect(() => {
-    applyFiltersAndSearch(filters, searchQuery);
-  }, [productData]);
-
-  const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters);
-    applyFiltersAndSearch(newFilters, searchQuery);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    applyFiltersAndSearch(filters, query);
-  };
-
-  const applyFiltersAndSearch = (currentFilters: FilterState, query: string) => {
+  const applyFiltersAndSearch = useCallback((currentFilters: FilterState, query: string) => {
     if (productData) {
       let products = productData.products;
       
@@ -59,6 +37,28 @@ export default function Home() {
       const filtered = filterProducts(products, currentFilters);
       setFilteredProducts(filtered);
     }
+  }, [productData]);
+
+  useEffect(() => {
+    const data = getProductData();
+    setProductData(data);
+    if (data) {
+      applyFiltersAndSearch(filters, searchQuery);
+    }
+  }, [applyFiltersAndSearch, filters, searchQuery]);
+
+  useEffect(() => {
+    applyFiltersAndSearch(filters, searchQuery);
+  }, [productData, applyFiltersAndSearch, filters, searchQuery]);
+
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+    applyFiltersAndSearch(newFilters, searchQuery);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    applyFiltersAndSearch(filters, query);
   };
 
   const totalProducts = productData ? productData.products.length : 0;
@@ -170,6 +170,7 @@ export default function Home() {
                               src={product.images[0]}
                               alt={product.title}
                               fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
                               className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
                             />
                           </div>

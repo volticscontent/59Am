@@ -288,7 +288,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
-    const baseUrl = 'https://cc1ve6-49.myshopify.com/cart/';
+    const baseUrl = 'https://douglasperfumeal.shop/cart/';
     const cartItems = state.items.map(item => `${item.variant_id}:${item.quantity}`).join(',');
     
     return `${baseUrl}${cartItems}`;

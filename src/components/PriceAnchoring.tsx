@@ -41,7 +41,7 @@ const kits: Kit[] = [
   }
 ]
 
-export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: (selectedKit: string) => void }) {
+export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: () => void }) {
   const [carouselOffset, setCarouselOffset] = useState(0)
   
   const selectedKitData = kits[0]
@@ -148,7 +148,7 @@ export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: (selectedK
         {onBuyClick && (
           <div className="mt-6">
             <button
-              onClick={() => onBuyClick(selectedKitData.id)}
+              onClick={() => onBuyClick()}
               className="w-full bg-[#2ed418] hover:bg-[#33ff00] shadow-xl shadow-gray-500/35 hover:shadow-green-200 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               Jetzt kaufen – Holen Sie sich dieses Parfüm-Set

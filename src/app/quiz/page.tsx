@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "../../components/button"
 import { RadioGroup, RadioGroupItem } from "../../components/radio-group"
 import { Label } from "../../components/label"
@@ -8,8 +10,8 @@ import { Trophy, DollarSign } from "lucide-react"
 import PriceAnchoring from "../../components/PriceAnchoring"
 import QuizHeader from "../../components/QuizHeader"
 import Footer from "../../components/Footer"
-import { trackQuizStep, trackQuizCompletion, useTikTokClickIdCapture } from "../../utils/tracking"
-import styles from "../../styles/animations.module.css"
+import { trackQuizStep, trackQuizCompletion } from "../../utils/tracking"
+import { useUTM } from "../../contexts/UTMContext"
 import "../../styles/quiz-progress.css"
 
 // Declare tipos globais para os pixels
@@ -159,65 +161,13 @@ const SuccessNotification = ({ show, onClose }: { show: boolean; onClose: () => 
   )
 }
 
-// Remove unused FallingHeart component (lines 272-283)
-
-// Remove unused ChelseaLionIcon component (lines 286-294)
-
-// Carrossel de imagens para substituir o VSL - COMENTADO
-/*
-const ImageCarousel = () => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = ["/per1.png", "/per2.png", "/per3.png", "/per4.png", "/per5.png", "/per6.png", "/per7.png", "/per8.png", "/per9.png", "/per10.png", "/per.png"]]];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="relative w-full" style={{ paddingBottom: '75%' }}>
-      <div className="absolute inset-0 rounded-xl overflow-hidden">
-        {images.map((image, index) => (
-          <Image
-            key={index}
-            src={image}
-            alt={`WWE SummerSlam Image ${index + 1}`}
-            fill
-            className={`object-cover transition-opacity duration-1000 ${
-              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{ borderRadius: '25px' }}
-          />
-        ))}
-      </div>
-      
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentImageIndex(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === currentImageIndex 
-                ? 'bg-white shadow-lg' 
-                : 'bg-white/50 hover:bg-white/75'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-*/
-
 // Componente de vídeo simplificado
 const VideoPlayer = React.memo(() => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [showMuteButton, setShowMuteButton] = useState(true);
   const [videoError, setVideoError] = useState(false);
+  const { trackQuizVSLViewed } = useUTM();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -241,18 +191,25 @@ const VideoPlayer = React.memo(() => {
       setVideoError(true);
     };
 
+    const handleVideoEnded = () => {
+      // Tracking customizado quando VSL termina
+      trackQuizVSLViewed();
+    };
+
     forcePlay();
     video.addEventListener('canplay', forcePlay);
     video.addEventListener('loadeddata', forcePlay);
     video.addEventListener('error', handleError);
+    video.addEventListener('ended', handleVideoEnded);
     setTimeout(forcePlay, 1000);
 
     return () => {
       video.removeEventListener('canplay', forcePlay);
       video.removeEventListener('loadeddata', forcePlay);
       video.removeEventListener('error', handleError);
+      video.removeEventListener('ended', handleVideoEnded);
     };
-  }, []);
+  }, [trackQuizVSLViewed]);
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -359,56 +316,6 @@ const VideoPlayer = React.memo(() => {
 
 VideoPlayer.displayName = 'VideoPlayer';
 
-// Componente de Layout para os scripts simplificado - removido pois já está no layout global
-// const PixelScripts = () => (
-//   <>
-//   </>
-// );
-
-// Hook para controlar o carregamento dos pixels - simplificado
-const usePixelLoader = () => {
-  const [isPixelsReady, setPixelsReady] = useState(false);
-  const pixelsInitialized = useRef(false);
-
-  useEffect(() => {
-    if (pixelsInitialized.current) {
-      setPixelsReady(true);
-      return;
-    }
-
-    // Verifica se o Facebook pixel está carregado (carregado no layout global)
-    const checkPixels = () => {
-      return window.fbq; // Removido window.ttq pois TikTok pixel não está sendo carregado
-    };
-
-    // Função que verifica os pixels
-    const checkAll = () => {
-      if (checkPixels()) {
-        setPixelsReady(true);
-        pixelsInitialized.current = true;
-        clearInterval(checkInterval);
-      }
-    };
-
-    // Inicia verificação periódica
-    const checkInterval = setInterval(checkAll, 500);
-
-    // Timeout de segurança após 3 segundos (reduzido pois só verifica Facebook pixel)
-    const timeoutId = setTimeout(() => {
-      setPixelsReady(true);
-      pixelsInitialized.current = true;
-      clearInterval(checkInterval);
-    }, 3000);
-
-    return () => {
-      clearInterval(checkInterval);
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
-  return isPixelsReady;
-};
-
 // Rastrear visualização da VSL apenas uma vez globalmente
 const useTrackVSLView = () => {
   useEffect(() => {
@@ -419,11 +326,6 @@ const useTrackVSLView = () => {
 };
 
 // Hook personalizado para gerenciar elementos escondidos (não é mais necessário)
-function useDelayedElements() {
-  // O delay agora é controlado pelo VTurb
-  return null;
-}
-
 const useAudioSystem = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -491,6 +393,44 @@ const useAudioSystem = () => {
   }, [isInitialized]);
 
   return { playSound, isInitialized };
+};
+
+// Componente do popup de timeout
+const TimeoutPopup = ({ show, onRestart, onClose }: { show: boolean; onRestart: () => void; onClose: () => void }) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Zeit abgelaufen!</h2>
+          <p className="text-gray-600 mb-6">
+            Die Zeit für diese Frage ist abgelaufen. Möchten Sie das Quiz von vorne beginnen?
+          </p>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button
+            onClick={onRestart}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+          >
+            Quiz neu starten
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-medium"
+          >
+            Schließen
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Componente do painel USP - versão minimalista Adidas
@@ -566,7 +506,7 @@ const USPPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
 
 
 // Componente DiscountProgressBar corrigido
-const DiscountProgressBar = ({ correctAnswers, answeredQuestions }: { correctAnswers: number; answeredQuestions: number }) => {
+const DiscountProgressBar = ({ answeredQuestions }: { answeredQuestions: number }) => {
   const discountPerAnswer = 20; // €20 por resposta
   const maxDiscount = questions.length * discountPerAnswer; // €120 máximo (6 × 20)
   
@@ -639,7 +579,21 @@ export default function WWESummerSlamQuiz() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUSPPanel, setShowUSPPanel] = useState(false);
+  const [showTimeoutPopup, setShowTimeoutPopup] = useState(false);
   const [startTime, setStartTime] = useState<number>(0);
+
+  // Hook do contexto UTM para tracking
+  const { 
+    trackQuizStarted,
+    trackQuizQuestion,
+    trackQuizResultViewed,
+    trackQuizRedirectToStore,
+    trackQuizRedirectToStoreSuccessful,
+    utmData
+  } = useUTM();
+
+  // Hook do router para navegação interna
+  const router = useRouter();
 
   // Estilos CSS agora são importados via arquivo separado
 
@@ -686,12 +640,13 @@ export default function WWESummerSlamQuiz() {
 
     // Tracking da resposta
     trackQuizStep(`question_${currentQuestion + 1}`, { answer: answerToUse });
+    // Tracking customizado para cada pergunta
+    trackQuizQuestion(currentQuestion + 1, answerToUse);
 
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(prev => prev + 1)
         setSelectedAnswer("")
-        setProgressValue(100)
       } else {
         setQuizCompleted(true)
         const endTime = Date.now()
@@ -700,21 +655,50 @@ export default function WWESummerSlamQuiz() {
           score: correctAnswers + (isCorrect ? 1 : 0),
           timeTaken: timeTaken
         });
+        // Tracking customizado para visualização do resultado
+        trackQuizResultViewed();
       }
       setIsSubmitting(false)
     }, 1500)
-  }, [isSubmitting, currentQuestion, selectedAnswer, correctAnswers, startTime, playSound]);
+  }, [isSubmitting, currentQuestion, selectedAnswer, correctAnswers, startTime, playSound, trackQuizQuestion, trackQuizResultViewed]);
 
-  // Remover o useEffect que adiciona os estilos - corrigido
+  // Função para reiniciar o quiz
+  const handleRestartQuiz = () => {
+    setCurrentQuestion(0);
+    setSelectedAnswer('');
+    setCorrectAnswers(0);
+    setAnsweredQuestions(0);
+    setQuizCompleted(false);
+    setShowNotification(false);
+    setShowTimeoutPopup(false);
+    setProgressValue(100);
+    setGameStarted(true);
+    setStartTime(Date.now());
+  };
+
+  // Função para fechar o popup de timeout
+  const handleCloseTimeoutPopup = () => {
+    setShowTimeoutPopup(false);
+    // Avançar para a próxima pergunta mesmo sem resposta
+    setAnsweredQuestions(prev => prev + 1);
+    
+    setTimeout(() => {
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(prev => prev + 1);
+        setSelectedAnswer('');
+      } else {
+        setQuizCompleted(true);
+      }
+    }, 100);
+  };
+
+  // Timer para controlar o progresso da pergunta
   useEffect(() => {
     if (progressTimer.current) {
       clearInterval(progressTimer.current);
     }
 
     if (gameStarted && !quizCompleted && currentQuestion < questions.length) {
-      // Reset progress value quando iniciar nova pergunta
-      setProgressValue(100);
-      
       progressTimer.current = setInterval(() => {
         setProgressValue(prev => {
           const newValue = prev - 1;
@@ -722,11 +706,9 @@ export default function WWESummerSlamQuiz() {
             if (progressTimer.current) {
               clearInterval(progressTimer.current);
             }
-            // Verificar se ainda estamos dentro dos limites antes de avançar
-            if (currentQuestion < questions.length && !quizCompleted) {
-              handleAnswer();
-            }
-            return 100;
+            // Mostrar popup de timeout ao invés de avançar automaticamente
+            setShowTimeoutPopup(true);
+            return 0;
           }
           return newValue;
         });
@@ -738,13 +720,17 @@ export default function WWESummerSlamQuiz() {
         clearInterval(progressTimer.current);
       }
     };
-  }, [gameStarted, currentQuestion, quizCompleted, handleAnswer]);
+  }, [gameStarted, quizCompleted, currentQuestion, handleAnswer]);
 
-  // Reset progress quando mudar de pergunta
+  // Reset progress value apenas quando uma nova pergunta é carregada (não quando resposta é selecionada)
   useEffect(() => {
-    setProgressValue(100);
-    
-    // Rastrear visualização da pergunta quando gameStarted está true
+    if (gameStarted && !quizCompleted && currentQuestion < questions.length) {
+      setProgressValue(100);
+    }
+  }, [currentQuestion, gameStarted, quizCompleted]);
+
+  // Rastrear visualização da pergunta quando gameStarted está true
+  useEffect(() => {
     if (gameStarted && !quizCompleted) {
       trackQuizStep('question_viewed', { questionNumber: currentQuestion + 1 });
     }
@@ -768,6 +754,7 @@ export default function WWESummerSlamQuiz() {
   const handleStartQuiz = () => {
     setIsLoading(true)
     trackQuizStep('quiz_start'); // Rastrear início do quiz
+    trackQuizStarted(); // Tracking customizado Quiz_Started
     
     // Simular um pequeno delay para melhor UX
     setTimeout(() => {
@@ -780,54 +767,37 @@ export default function WWESummerSlamQuiz() {
   }
 
   // Função para lidar com o clique no botão de compra
-  const handleBuyNowClick = (selectedKit: string) => {
+  const handleBuyNowClick = () => {
     trackQuizStep('go_to_store'); // Evento final - ir para a loja
+    trackQuizRedirectToStore(); // Tracking customizado Quiz_RedirectToStore
     
-    // Links dos produtos baseados no kit selecionado
-    const productLinks = {
-      "john-cena": "http://store.douglasparfum.shop/",
-    };
+    // Construir URL com UTMs diretamente
+    let url = "/";
     
-    const url = productLinks[selectedKit as keyof typeof productLinks] || productLinks["john-cena"];
-    const newWindow = window.open(url, "_blank");
-    if (newWindow) newWindow.opener = null;
+    // Adicionar UTMs se disponíveis
+    if (utmData) {
+      const params = new URLSearchParams();
+      
+      if (utmData.utm_source) params.append('utm_source', utmData.utm_source);
+      if (utmData.utm_medium) params.append('utm_medium', utmData.utm_medium);
+      if (utmData.utm_campaign) params.append('utm_campaign', utmData.utm_campaign);
+      if (utmData.utm_content) params.append('utm_content', utmData.utm_content);
+      if (utmData.utm_term) params.append('utm_term', utmData.utm_term);
+      if (utmData.gclid) params.append('gclid', utmData.gclid);
+      if (utmData.fbclid) params.append('fbclid', utmData.fbclid);
+      if (utmData.ttclid) params.append('ttclid', utmData.ttclid);
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+    }
+    
+    // Usar navegação interna do Next.js em vez de abrir nova janela
+    router.push(url);
+    
+    // Tracking de sucesso no redirecionamento
+    trackQuizRedirectToStoreSuccessful();
   }
-
-  // Modificar nextQuestion com loading
-  // const nextQuestion = () => {
-  //   setIsLoading(true)
-  //   
-  //   setTimeout(() => {
-  //     if (currentQuestion < questions.length - 1) {
-  //       setCurrentQuestion((prev) => prev + 1)
-  //       setSelectedAnswer("")
-  //     } else {
-  //       setQuizCompleted(true)
-  //       trackQuizCompletion({ 
-  //         totalQuestions: questions.length, 
-  //         correctAnswers: correctAnswers,
-  //         completionTime: Date.now() - startTime
-  //       }); // Rastrear conclusão do quiz
-  //     }
-  //     setIsLoading(false)
-  //   }, 400)
-  // }
-
-  // const handleRestart = () => {
-  //   trackQuizStep('quiz_restart'); // Rastrear reinício do quiz
-  //   setGameStarted(false);
-  //   setCurrentQuestion(0);
-  //   setSelectedAnswer("");
-  //   setCorrectAnswers(0);
-  //   setQuizCompleted(false);
-  //   setShowNotification(false);
-  //   // Scroll automático para o topo ao reiniciar quiz
-  //   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // };
-
-  const discount = correctAnswers * 20
-  const originalPrice = 147.0
-  // const finalPrice = Math.max(originalPrice - discount, 47.0)
 
   useTrackVSLView(); // Comentado junto com o VSL
 
@@ -848,21 +818,20 @@ export default function WWESummerSlamQuiz() {
           <div className="flex-grow">
             <div className="container mx-auto px-2 py-10">
               <div className="text-center mb-10 animate-fadeIn">
-                <h1 className="text-4xl font-normal font-thin text-gray-900">Nachricht vom CEO von Douglas</h1>
+                <h1 className="text-4xl font-[Playfair_Display] text-gray-900">Nachricht vom CEO von Douglas</h1>
               </div>
               
-              <div className="space-y-10">
+              <div className="space-y-12">
                 <div className="animate-scaleIn">
                   {/* <VideoPlayer isReady={true} /> */}
                   <VideoPlayer />
                 </div>
 
-                <div className="bg-[#9bdcd2] text-center py-5 px-5 text-sm relative rounded-xl">
-                  <blockquote className="text-1xl md:text-lg text-[#020202] font-thin text-center leading-relaxed">
+                <div className="bg-[#243b37] text-center py-5 px-5 text-sm relative rounded-xl">
+                  <blockquote className="text-1xl md:text-lg text-[#ffffff] font-[Playfair_Display] text-center leading-relaxed">
                     &quot;Beantworte 6 Fragen zu deinen Parfümvorlieben und erhalte 120 € Rabatt auf ein Parfüm-Set.&quot;
                   </blockquote>
                 </div>
-
                 <Button
                   onClick={handleStartQuiz}
                   disabled={isLoading}
@@ -881,6 +850,13 @@ export default function WWESummerSlamQuiz() {
                     </>
                   )}
                 </Button>
+                {/* Seção de envio */}
+              <div className="flex justify-center items-center gap-6">
+               <Image src="/shipping_images/dhl.svg" alt="DHL" width={40} height={40} className="h-12 w-auto" />
+               <Image src="/shipping_images/dhl-express.svg" alt="DHL Express" width={40} height={40} className="h-12 w-auto border-1 border-gray-200" />
+               <Image src="/shipping_images/hermes.svg" alt="Hermes" width={40} height={40} className="h-12 w-auto" />
+               <Image src="/shipping_images/co2-neutraler-versand.svg" alt="CO2 neutraler Versand" width={40} height={40} className="h-12 w-auto" />
+              </div>
               </div>
             </div>
           </div>
@@ -903,7 +879,7 @@ export default function WWESummerSlamQuiz() {
 
               <div className="flex flex-col gap-4">
                 {/* Discount progress bar */}
-                <DiscountProgressBar correctAnswers={correctAnswers} answeredQuestions={answeredQuestions} />
+                <DiscountProgressBar answeredQuestions={answeredQuestions} />
                 
               </div>
             </div>
@@ -922,15 +898,21 @@ export default function WWESummerSlamQuiz() {
         <div className="flex-grow container mx-auto px-1 py-5">
           <SuccessNotification show={showNotification} onClose={() => setShowNotification(false)} />
 
+          <TimeoutPopup 
+            show={showTimeoutPopup} 
+            onRestart={handleRestartQuiz} 
+            onClose={handleCloseTimeoutPopup} 
+          />
+          
           <div className="w-full max-w-2xl mx-auto">
             <div className="mb-6 animate-fadeIn">
               <div className="flex justify-center mb-4">
                 <div className="text-center">
                   <p className="text-sm text-gray-600">Ihr Rabatt</p>
                   <p className={`text-2xl font-bold text-[#4ada12] transform transition-all duration-500 ${
-                    correctAnswers > 0 ? 'scale-125 animate-pulse' : ''
+                    answeredQuestions > 0 ? 'scale-125 animate-pulse' : ''
                   }`}>
-                    €{correctAnswers * 20}
+                    €{answeredQuestions * 20}
                   </p>
                   <p className="text-xs text-gray-500">Teilnahmebelohnung</p>
                 </div>
@@ -992,7 +974,7 @@ export default function WWESummerSlamQuiz() {
                 </Button>
 
                 {/* Discount progress bar instead of quiz progress */}
-                <DiscountProgressBar correctAnswers={correctAnswers} answeredQuestions={answeredQuestions} />
+                <DiscountProgressBar answeredQuestions={answeredQuestions} />
               </div>
             </div>
           </div>
