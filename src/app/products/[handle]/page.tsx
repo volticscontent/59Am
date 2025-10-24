@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { getProductByHandle, getRelatedProducts, formatPrice, Product } from '../../../utils/products';
-import { useParallax } from '@/hooks/useParallax';
+
 import { useCart } from '@/contexts/CartContext';
 import { findVariantByHandle } from '@/utils/shopifyVariants';
 import '@/styles/product-parallax.css';
@@ -63,10 +63,8 @@ export default function ProductPage() {
   const [selectedImage, setSelectedImage] = useState<string>('')
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isReviewsOpen, setIsReviewsOpen] = useState(false)
-  const { scrollY, isScrolling, hasReachedPhotoLimit, photoLimit } = useParallax()
 
   // Função para adicionar produto ao carrinho
   const handleAddToCart = async () => {
@@ -83,7 +81,7 @@ export default function ProductPage() {
       variant_id: shopifyVariant.variant_id,
       product_id: shopifyVariant.product_id,
       title: shopifyVariant.title,
-      price: shopifyVariant.price,
+      price: shopifyVariant.price.toString(),
       image: product.images[0] || ''
     });
   };

@@ -4,7 +4,7 @@ export interface ShopifyVariant {
   variant_id: number;
   product_id: number;
   title: string;
-  price: string;
+  price: number;
 }
 
 // Carrega os dados do arquivo JSON de forma dinâmica
