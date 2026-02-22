@@ -56,7 +56,7 @@ interface EcommerceData {
 }
 
 interface WindowWithTracking extends Window {
-  fbq?: (action: string, event: string, data?: object) => void;
+  fbq?: (action: string, event: string, data?: object, options?: object) => void;
   gtag?: (command: string, event: string, data?: object) => void;
   utmify?: {
     track: (event: string, data?: object) => void;
@@ -77,7 +77,8 @@ interface UTMContextType {
   trackQuizCompleted: (data?: QuizResultData) => void;
   trackEcommerce: (
     event: 'add_to_cart' | 'initiate_checkout' | 'purchase',
-    ecommerce: EcommerceData
+    ecommerce: EcommerceData,
+    eventId?: string
   ) => void;
   // Novas funções específicas para eventos customizados do Quiz
   trackQuizPageView: () => void;
@@ -145,19 +146,19 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   useEffect(() => {
     if (hasUTMs) {
       dataLayerManager.setUTMData(utmData);
-      
+
       // Enviar para diferentes plataformas se habilitadas
       if (enableGA4 && ga4MeasurementId) {
         dataLayerManager.sendToGA4(ga4MeasurementId);
       }
-      
+
       // Removido sendToMetaPixel() aqui para evitar duplicação
       // O evento UTMCaptured é enviado diretamente no useEffect abaixo
-      
+
       if (enableUtmify) {
         dataLayerManager.sendToUtmify();
       }
-      
+
       if (enableConsoleLog) {
         console.log('UTMs capturados:', utmData);
         console.log('Data Layer completo:', dataLayer);
@@ -206,7 +207,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   const trackQuizPageView = () => {
     const eventData = createEnhancedEventData();
     dataLayerManager.push({ event: 'Quiz_PageView', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_PageView', eventData);
     }
@@ -215,7 +216,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   const trackQuizVSLViewed = () => {
     const eventData = createEnhancedEventData();
     dataLayerManager.push({ event: 'Quiz_VSLViewed', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_VSLViewed', eventData);
     }
@@ -224,7 +225,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   const trackQuizStarted = () => {
     const eventData = createEnhancedEventData();
     dataLayerManager.push({ event: 'Quiz_Started', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_Started', eventData);
     }
@@ -232,13 +233,13 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
 
   const trackQuizQuestion = (questionNumber: number, answer?: string) => {
     const eventName = `Quiz_Question${questionNumber}`;
-    const eventData = createEnhancedEventData({ 
+    const eventData = createEnhancedEventData({
       question_number: questionNumber,
       answer: answer
     });
-    
+
     dataLayerManager.push({ event: eventName, ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', eventName, eventData);
     }
@@ -246,9 +247,9 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
 
   const trackQuizResultViewed = (result?: QuizResultData) => {
     const eventData = createEnhancedEventData({ result });
-    
+
     dataLayerManager.push({ event: 'Quiz_ResultViewed', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_ResultViewed', eventData);
     }
@@ -257,7 +258,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   const trackQuizRedirectToStore = () => {
     const eventData = createEnhancedEventData();
     dataLayerManager.push({ event: 'Quiz_RedirectToStore', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_RedirectToStore', eventData);
     }
@@ -266,7 +267,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   const trackQuizRedirectToStoreSuccessful = () => {
     const eventData = createEnhancedEventData();
     dataLayerManager.push({ event: 'Quiz_RedirectToStoreSuccessful', ...eventData });
-    
+
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('trackCustom', 'Quiz_RedirectToStoreSuccessful', eventData);
     }
@@ -274,16 +275,16 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
 
   // Função para eventos nativos da Store
   const trackStoreProductViewed = (productData: ProductData) => {
-    const eventData = createEnhancedEventData({ 
+    const eventData = createEnhancedEventData({
       product_id: productData.id,
       product_name: productData.name,
       category: productData.category,
       price: productData.price,
       currency: productData.currency || 'EUR'
     });
-    
+
     dataLayerManager.push({ event: 'ViewContent', ...eventData });
-    
+
     // Usar evento NATIVO do Meta Pixel para otimização automática
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       const metaPixelData = {
@@ -300,7 +301,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
           fbp: dataLayer?.client_id ? `fb.1.${Date.now()}.${dataLayer.client_id}` : undefined
         }
       };
-      
+
       (window as WindowWithTracking).fbq!('track', 'ViewContent', metaPixelData);
     }
   };
@@ -311,13 +312,13 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
       (window as WindowWithTracking).fbq!('track', 'PageView');
     }
-    
+
     // Enviar para GA4 se habilitado
     if (enableGA4 && typeof window !== 'undefined' && (window as WindowWithTracking).gtag) {
       (window as WindowWithTracking).gtag!('event', 'page_view');
     }
   }, [enableMetaPixel, enableGA4]);
-    
+
   // Tracking específico do quiz
   const trackQuizStep = (step: string, data?: QuizStepData) => {
     dataLayerManager.trackQuizStep(step, data);
@@ -332,7 +333,8 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
   // Tracking de e-commerce - ATUALIZADO para usar eventos NATIVOS
   const trackEcommerce = (
     event: 'add_to_cart' | 'initiate_checkout' | 'purchase',
-    ecommerce: EcommerceData
+    ecommerce: EcommerceData,
+    eventId?: string
   ) => {
     // Transformar EcommerceData para o formato esperado pelo dataLayerManager
     const transformedEcommerce = {
@@ -346,14 +348,14 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
         price: item.price || 0
       }))
     };
-    
+
     dataLayerManager.trackEcommerce(event, transformedEcommerce);
-    
+
     // Enviar para Meta Pixel com eventos NATIVOS (não customizados)
     if (enableMetaPixel && typeof window !== 'undefined' && (window as WindowWithTracking).fbq) {
-      const fbqEvent = event === 'add_to_cart' ? 'AddToCart' : 
-                      event === 'initiate_checkout' ? 'InitiateCheckout' : 'Purchase';
-      
+      const fbqEvent = event === 'add_to_cart' ? 'AddToCart' :
+        event === 'initiate_checkout' ? 'InitiateCheckout' : 'Purchase';
+
       const metaPixelData = {
         content_ids: ecommerce.items?.map((item: EcommerceItem) => item.item_id || item.id) || [],
         content_type: 'product',
@@ -368,7 +370,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
           external_id: dataLayer?.fingerprint_id
         }
       };
-      
+
       // Usar eventos NATIVOS do Meta Pixel para otimização automática
       (window as WindowWithTracking).fbq!('track', fbqEvent, metaPixelData);
     }
@@ -402,7 +404,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
         trackPageView();
         sessionStorage.setItem('pageview_sent', 'true');
       }
-      
+
       // Se há UTMs, enviar evento UTMCaptured apenas uma vez
       if (hasUTMs && Object.keys(utmData).length > 0) {
         const utmCapturedSent = sessionStorage.getItem('utm_captured_sent');
@@ -413,7 +415,7 @@ const UTMProviderInner: React.FC<UTMProviderProps> = ({
         }
       }
     }, 500); // Aumentar delay para garantir inicialização
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
@@ -460,27 +462,27 @@ export const useUTM = (): UTMContextType => {
 // Hook para tracking simplificado (sem necessidade de contexto completo)
 export const useTracking = () => {
   const context = useContext(UTMContext);
-  
+
   // Se não há contexto, retornar funções vazias como fallback
   if (!context) {
     return {
-      trackEvent: () => {},
-      trackPageView: () => {},
-      trackQuizStep: () => {},
-      trackQuizCompleted: () => {},
-      trackEcommerce: () => {},
+      trackEvent: () => { },
+      trackPageView: () => { },
+      trackQuizStep: () => { },
+      trackQuizCompleted: () => { },
+      trackEcommerce: () => { },
       // Novas funções específicas
-      trackQuizPageView: () => {},
-      trackQuizVSLViewed: () => {},
-      trackQuizStarted: () => {},
-      trackQuizQuestion: () => {},
-      trackQuizResultViewed: () => {},
-      trackQuizRedirectToStore: () => {},
-      trackQuizRedirectToStoreSuccessful: () => {},
-      trackStoreProductViewed: () => {}
+      trackQuizPageView: () => { },
+      trackQuizVSLViewed: () => { },
+      trackQuizStarted: () => { },
+      trackQuizQuestion: () => { },
+      trackQuizResultViewed: () => { },
+      trackQuizRedirectToStore: () => { },
+      trackQuizRedirectToStoreSuccessful: () => { },
+      trackStoreProductViewed: () => { }
     };
   }
-  
+
   return {
     trackEvent: context.trackEvent,
     trackPageView: context.trackPageView,

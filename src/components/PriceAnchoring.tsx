@@ -22,25 +22,25 @@ export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: () => void
         return newOffset
       })
     }, 20) // Update every 20ms for smooth animation
-    
+
     return () => clearInterval(interval)
   }, [])
 
   return (
     <div className="bg-white px-2 pt-4 pb-4">
-        {/* Headline */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Sichern Sie sich Ihr exklusives Parfüm-Angebot
-          </h2>
-          <p className="text-gray-600 text-sm md:text-base">
-            Beantworten Sie sechs kurze Fragen und sparen Sie bis zu 120 € — nur online verfügbar, für begrenzte Zeit.
-          </p>
-        </div>
+      {/* Headline */}
+      <div className="text-center mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          Sichern Sie sich Ihr exklusives Parfüm-Angebot
+        </h2>
+        <p className="text-gray-600 text-sm md:text-base">
+          Beantworten Sie sechs kurze Fragen und sparen Sie bis zu 120 € — nur online verfügbar, für begrenzte Zeit.
+        </p>
+      </div>
 
 
 
-      
+
       {/* New Temu-style Layout */}
       <div className="flex items-center justify-between mb-4">
         <div className="w-20 h-20 rounded-lg overflow-hidden border-1 border-[#20ca97]">
@@ -61,26 +61,26 @@ export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: () => void
       <div className="flex justify-between items-center py-2">
         <span className="text-sm text-gray-900 uppercase tracking-wide font-medium">ENDPREIS</span>
         <div className="text-right">
-          <span className="block text-3xl font-semibold text-gray-900">€49.99</span>
+          <span className="block text-3xl font-semibold text-gray-900">€59.90</span>
           <span className="text-sm text-[#ca0d0d]">Sie sparen €120</span>
         </div>
       </div>
 
-              <div className="border-t-2 border-[#13ce67] pt-6">
-          <h3 className="text-center text-[#2c2c2c] text-2xl font-bold font-sans mb-2">Parfüms, die wir noch auf Lager haben:</h3>
-        
+      <div className="border-t-2 border-[#13ce67] pt-6">
+        <h3 className="text-center text-[#2c2c2c] text-2xl font-bold font-sans mb-2">Parfüms, die wir noch auf Lager haben:</h3>
+
         <div className="w-full overflow-hidden pb-4 mb-4">
           <div className="relative">
-            <div 
-              className="flex transition-none" 
+            <div
+              className="flex transition-none"
               style={{
                 transform: `translateX(${carouselOffset}px)`,
                 width: '7656px' // Adjusted for 11 images: 11 * 232px * 3 cycles = 7656px
               }}
             >
               {/* Create infinite loop by repeating the pattern multiple times */}
-              {Array.from({ length: 3 }, (_, cycleIndex) => 
-                [1,2,3,4,5,6,7,8,9,10,11].map((item, index) => (
+              {Array.from({ length: 3 }, (_, cycleIndex) =>
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((item, index) => (
                   <div key={`${cycleIndex}-${index}`} className="flex-shrink-0 mr-8">
                     <div className="w-[200px] h-[200px] md:w-[200px] md:h-[200px] sm:w-[150px] sm:h-[150px]">
                       <Image
@@ -103,7 +103,7 @@ export default function PriceAnchoring({ onBuyClick }: { onBuyClick?: () => void
 
       {/* Price Breakdown */}
       <div className="space-y-4 mb-8">
-        
+
         {/* Buy Now Button */}
         {onBuyClick && (
           <div className="mt-6">

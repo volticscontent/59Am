@@ -19,12 +19,12 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Perfumes Alemanha",
+  title: "Douglas Perfum",
   description: "Loja de perfumes importados da Alemanha",
   icons: {
-    icon: "/favico.png",
-    shortcut: "/favico.png",
-    apple: "/favico.png",
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 
@@ -54,7 +54,7 @@ export default function RootLayout({
                   s.parentNode.insertBefore(t,s)}(window, document,'script',
                   'https://connect.facebook.net/en_US/fbevents.js');
                   fbq('init', '${metaPixelId}');
-                  fbq('track', 'QPageView');
+                  fbq('track', 'PageView');
                 `,
               }}
             />
@@ -64,13 +64,13 @@ export default function RootLayout({
                 height={1}
                 width={1}
                 style={{ display: 'none' }}
-                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=QPageView&noscript=1`}
+                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
                 alt=""
               />
             </noscript>
           </>
         )}
-        
+
         {/* Utmify Pixel Script */}
         {utmifyPixelId && (
           <script
@@ -86,7 +86,45 @@ export default function RootLayout({
             }}
           />
         )}
-        
+
+        {/* Utmify UTM Script */}
+        <script
+          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+          data-utmify-prevent-xcod-sck
+          data-utmify-prevent-subids
+          async
+          defer
+        ></script>
+
+        {/* Utmify Back Redirect */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              const link = '/'; // Aqui você altera o link do back redirect depois
+              
+              function setBackRedirect(url) {
+                let urlBackRedirect = url;
+                urlBackRedirect = urlBackRedirect.trim() +
+                  (urlBackRedirect.indexOf('?') > 0 ? '&' : '?') +
+                  document.location.search.replace('?', '').toString();
+
+                history.pushState({}, '', location.href);
+                history.pushState({}, '', location.href);
+                history.pushState({}, '', location.href);
+
+                window.addEventListener('popstate', () => {
+                  console.log('onpopstate', urlBackRedirect);
+                  setTimeout(() => {
+                    location.href = urlBackRedirect;
+                  }, 1);
+                });
+              }
+
+              setBackRedirect(link);
+            `,
+          }}
+        />
+
       </head>
       <body className="antialiased font-sans">
         <UTMProvider

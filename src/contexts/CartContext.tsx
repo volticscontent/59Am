@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { useTracking } from '@/contexts/UTMContext';
 
 export interface CartItem {
   handle: string;
@@ -33,7 +34,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const existingItem = state.items.find(item => item.handle === action.payload.handle);
-      
+
       if (existingItem) {
         const updatedItems = state.items.map(item =>
           item.handle === action.payload.handle
@@ -58,11 +59,11 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         };
       }
     }
-    
+
     case 'REMOVE_ITEM': {
       const itemToRemove = state.items.find(item => item.handle === action.payload);
       if (!itemToRemove) return state;
-      
+
       return {
         ...state,
         items: state.items.filter(item => item.handle !== action.payload),
@@ -70,13 +71,13 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalPrice: state.totalPrice - (parseFloat(itemToRemove.price) * itemToRemove.quantity)
       };
     }
-    
+
     case 'UPDATE_QUANTITY': {
       const item = state.items.find(item => item.handle === action.payload.handle);
       if (!item) return state;
-      
+
       const quantityDiff = action.payload.quantity - item.quantity;
-      
+
       if (action.payload.quantity <= 0) {
         return {
           ...state,
@@ -85,7 +86,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           totalPrice: state.totalPrice - (parseFloat(item.price) * item.quantity)
         };
       }
-      
+
       return {
         ...state,
         items: state.items.map(item =>
@@ -97,7 +98,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalPrice: state.totalPrice + (parseFloat(item.price) * quantityDiff)
       };
     }
-    
+
     case 'CLEAR_CART':
       return {
         ...state,
@@ -105,36 +106,36 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalItems: 0,
         totalPrice: 0
       };
-    
+
     case 'TOGGLE_CART':
       return {
         ...state,
         isOpen: !state.isOpen
       };
-    
+
     case 'OPEN_CART':
       return {
         ...state,
         isOpen: true
       };
-    
+
     case 'CLOSE_CART':
       return {
         ...state,
         isOpen: false
       };
-    
+
     case 'LOAD_CART':
       const totalItems = action.payload.reduce((sum, item) => sum + item.quantity, 0);
       const totalPrice = action.payload.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
-      
+
       return {
         ...state,
         items: action.payload,
         totalItems,
         totalPrice
       };
-    
+
     default:
       return state;
   }
@@ -149,7 +150,7 @@ interface CartContextType {
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
-  getShopifyCheckoutUrl: () => string;
+  getCheckoutUrl: () => string;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -163,6 +164,7 @@ const initialState: CartState = {
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { trackEcommerce } = useTracking();
 
   // Carregar carrinho do localStorage na inicialização
   useEffect(() => {
@@ -188,41 +190,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
     dispatch({ type: 'ADD_ITEM', payload: item });
-    
-    // Track add to cart event for Meta Pixel
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'AddToCart', {
-        content_ids: [item.variant_id.toString()],
-        content_type: 'product',
-        value: parseFloat(item.price),
-        currency: 'EUR'
-      });
-    }
-    
-    // Track add to cart event for Utmify
-    if (typeof window !== 'undefined' && window.pixelId) {
-      try {
-        fetch(`https://api.utmify.com.br/tracking/v1/events`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            pixel_id: window.pixelId,
-            event: 'add_to_cart',
-            event_data: {
-              content_ids: [item.variant_id.toString()],
-              content_type: 'product',
-              value: parseFloat(item.price),
-              currency: 'EUR',
-              product_title: item.title
-            }
-          })
-        }).catch(error => console.log('Utmify tracking error:', error));
-      } catch (error) {
-        console.log('Utmify tracking error:', error);
-      }
-    }
+
+    // Use centralized tracking
+    trackEcommerce('add_to_cart', {
+      value: parseFloat(item.price),
+      currency: 'EUR',
+      items: [{
+        item_id: item.variant_id.toString(),
+        item_name: item.title,
+        price: parseFloat(item.price),
+        quantity: 1
+      }]
+    });
   };
 
   const removeItem = (handle: string) => {
@@ -249,49 +228,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'CLOSE_CART' });
   };
 
-  const getShopifyCheckoutUrl = () => {
+  const getCheckoutUrl = () => {
     if (state.items.length === 0) return '';
-    
-    // Track initiate checkout event for Meta Pixel
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'InitiateCheckout', {
-        content_ids: state.items.map(item => item.variant_id.toString()),
-        content_type: 'product',
-        value: state.totalPrice,
-        currency: 'EUR',
-        num_items: state.totalItems
-      });
-    }
-    
-    // Track initiate checkout event for Utmify
-    if (typeof window !== 'undefined' && window.pixelId) {
-      try {
-        fetch(`https://api.utmify.com.br/tracking/v1/events`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            pixel_id: window.pixelId,
-            event: 'initiate_checkout',
-            event_data: {
-              content_ids: state.items.map(item => item.variant_id.toString()),
-              content_type: 'product',
-              value: state.totalPrice,
-              currency: 'EUR',
-              num_items: state.totalItems
-            }
-          })
-        }).catch(error => console.log('Utmify tracking error:', error));
-      } catch (error) {
-        console.log('Utmify tracking error:', error);
-      }
-    }
-    
-    const baseUrl = 'https://douglasperfumeal.shop/cart/';
-    const cartItems = state.items.map(item => `${item.variant_id}:${item.quantity}`).join(',');
-    
-    return `${baseUrl}${cartItems}`;
+
+    // Use centralized tracking
+    trackEcommerce('initiate_checkout', {
+      value: state.totalPrice,
+      currency: 'EUR',
+      num_items: state.totalItems,
+      items: state.items.map(item => ({
+        item_id: item.variant_id.toString(),
+        item_name: item.title,
+        price: parseFloat(item.price),
+        quantity: item.quantity
+      }))
+    });
+
+    return '/checkout';
   };
 
   const value: CartContextType = {
@@ -303,7 +256,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toggleCart,
     openCart,
     closeCart,
-    getShopifyCheckoutUrl
+    getCheckoutUrl
   };
 
   return (
@@ -315,21 +268,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  
+
   // Durante o SSR/prerendering, retorna um contexto vazio
   if (typeof window === 'undefined' || context === undefined) {
     return {
       state: { items: [], isOpen: false, totalItems: 0, totalPrice: 0 },
-      addItem: () => {},
-      removeItem: () => {},
-      updateQuantity: () => {},
-      clearCart: () => {},
-      toggleCart: () => {},
-      openCart: () => {},
-      closeCart: () => {},
-      getShopifyCheckoutUrl: () => ''
+      addItem: () => { },
+      removeItem: () => { },
+      updateQuantity: () => { },
+      clearCart: () => { },
+      toggleCart: () => { },
+      openCart: () => { },
+      closeCart: () => { },
+      getCheckoutUrl: () => ''
     };
   }
-  
+
   return context;
 };

@@ -27,29 +27,28 @@ export default function Home() {
   const applyFiltersAndSearch = useCallback((currentFilters: FilterState, query: string) => {
     if (productData) {
       let products = productData.products;
-      
+
       // Aplicar pesquisa primeiro se houver query
       if (query.trim()) {
         products = searchProducts(products, query);
       }
-      
+
       // Depois aplicar filtros
       const filtered = filterProducts(products, currentFilters);
       setFilteredProducts(filtered);
     }
   }, [productData]);
 
+  // Load product data once on mount
   useEffect(() => {
     const data = getProductData();
     setProductData(data);
-    if (data) {
-      applyFiltersAndSearch(filters, searchQuery);
-    }
-  }, [applyFiltersAndSearch, filters, searchQuery]);
+  }, []);
 
+  // Apply filters whenever filters, searchQuery, or productData change
   useEffect(() => {
     applyFiltersAndSearch(filters, searchQuery);
-  }, [productData, applyFiltersAndSearch, filters, searchQuery]);
+  }, [productData, filters, searchQuery, applyFiltersAndSearch]);
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters);
@@ -66,21 +65,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header 
+      <Header
         onSearch={handleSearch}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
       />
 
-       <div className=''>
-          <Image
-            src="/bannersHeader/Banner_1.jpg"
-            alt="Promotional banner for perfumes and fragrances"
-            width={1200}
-            height={400}
-            className="w-full h-auto object-contain"
-          />
-        </div>
+      <div className=''>
+        <Image
+          src="/bannersHeader/Banner_1.jpg"
+          alt="Promotional banner for perfumes and fragrances"
+          width={1200}
+          height={400}
+          className="w-full h-auto object-contain"
+        />
+      </div>
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto sm:px-6 lg:px-8 pt-6">
@@ -92,15 +91,15 @@ export default function Home() {
               Parfüm & Düfte {totalProducts}
               <div className="sr-only-translation">ergebnisse</div>
             </div>
-            <h1 
-              aria-hidden="true" 
-              data-testid="product-overview-headline" 
+            <h1
+              aria-hidden="true"
+              data-testid="product-overview-headline"
               className="font-ultra-thin text-black uppercase"
             >
               Parfüm & Düfte
             </h1>
             <span aria-hidden="true" className="font-thin text-gray-600">
-              {filteredCount < totalProducts ? 
+              {filteredCount < totalProducts ?
                 `(${filteredCount.toLocaleString('de-DE')} von ${totalProducts.toLocaleString('de-DE')})` :
                 `(${totalProducts.toLocaleString('de-DE')})`
               }
@@ -111,30 +110,30 @@ export default function Home() {
         {/* Category Carousel with Config Button */}
         <div className="mb-8 pl-4">
           <div className="flex items-center gap-1.5 mb-8">
-            <button 
-              aria-haspopup="true" 
-              type="button" 
+            <button
+              aria-haspopup="true"
+              type="button"
               className="flex-shrink-0 flex items-center justify-center p-[0.6rem] border border-black hover:bg-gray-50 transition-colors"
               data-testid="menu-button-facets"
               aria-label="Filtros"
               onClick={() => setIsFilterSidebarOpen(true)}
             >
-              <svg 
-                width="25" 
-                height="25" 
-                viewBox="0 0 25 25" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg" 
-                aria-hidden="true" 
+              <svg
+                width="25"
+                height="25"
+                viewBox="0 0 25 25"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
                 role="img"
               >
-                <path d="M18.95 7H21.5C21.7761 7 22 6.77614 22 6.5C22 6.22386 21.7761 6 21.5 6H18.95C18.7184 4.85888 17.7095 4 16.5 4C15.2905 4 14.2816 4.85888 14.05 6H2.5C2.22386 6 2 6.22386 2 6.5C2 6.77614 2.22386 7 2.5 7H14.05C14.2816 8.14112 15.2905 9 16.5 9C17.7095 9 18.7184 8.14112 18.95 7ZM16.5 8C15.6716 8 15 7.32843 15 6.5C15 5.67157 15.6716 5 16.5 5C17.3284 5 18 5.67157 18 6.5C18 7.32843 17.3284 8 16.5 8Z" fill="black" fillRule="evenodd" clipRule="evenodd"/>
-                <path d="M9.94999 12H21.5C21.7761 12 22 11.7761 22 11.5C22 11.2239 21.7761 11 21.5 11H9.94999C9.71836 9.85888 8.70948 9 7.5 9C6.29052 9 5.28164 9.85888 5.05001 11H2.5C2.22386 11 2 11.2239 2 11.5C2 11.7761 2.22386 12 2.5 12H5.05001C5.28164 13.1411 6.29052 14 7.5 14C8.70948 14 9.71836 13.1411 9.94999 12ZM7.5 13C6.67157 13 6 12.3284 6 11.5C6 10.6716 6.67157 10 7.5 10C8.32843 10 9 10.6716 9 11.5C9 12.3284 8.32843 13 7.5 13Z" fill="black" fillRule="evenodd" clipRule="evenodd"/>
-                <path d="M21.5 17H16.95C16.7184 18.1411 15.7095 19 14.5 19C13.2905 19 12.2816 18.1411 12.05 17H2.5C2.22386 17 2 16.7761 2 16.5C2 16.2239 2.22386 16 2.5 16H12.05C12.2816 14.8589 13.2905 14 14.5 14C15.7095 14 16.7184 14.8589 16.95 16H21.5C21.7761 16 22 16.2239 22 16.5C22 16.7761 21.7761 17 21.5 17ZM13 16.5C13 17.3284 13.6716 18 14.5 18C15.3284 18 16 17.3284 16 16.5C16 15.6716 15.3284 15 14.5 15C13.6716 15 13 15.6716 13 16.5Z" fill="black" fillRule="evenodd" clipRule="evenodd"/>
+                <path d="M18.95 7H21.5C21.7761 7 22 6.77614 22 6.5C22 6.22386 21.7761 6 21.5 6H18.95C18.7184 4.85888 17.7095 4 16.5 4C15.2905 4 14.2816 4.85888 14.05 6H2.5C2.22386 6 2 6.22386 2 6.5C2 6.77614 2.22386 7 2.5 7H14.05C14.2816 8.14112 15.2905 9 16.5 9C17.7095 9 18.7184 8.14112 18.95 7ZM16.5 8C15.6716 8 15 7.32843 15 6.5C15 5.67157 15.6716 5 16.5 5C17.3284 5 18 5.67157 18 6.5C18 7.32843 17.3284 8 16.5 8Z" fill="black" fillRule="evenodd" clipRule="evenodd" />
+                <path d="M9.94999 12H21.5C21.7761 12 22 11.7761 22 11.5C22 11.2239 21.7761 11 21.5 11H9.94999C9.71836 9.85888 8.70948 9 7.5 9C6.29052 9 5.28164 9.85888 5.05001 11H2.5C2.22386 11 2 11.2239 2 11.5C2 11.7761 2.22386 12 2.5 12H5.05001C5.28164 13.1411 6.29052 14 7.5 14C8.70948 14 9.71836 13.1411 9.94999 12ZM7.5 13C6.67157 13 6 12.3284 6 11.5C6 10.6716 6.67157 10 7.5 10C8.32843 10 9 10.6716 9 11.5C9 12.3284 8.32843 13 7.5 13Z" fill="black" fillRule="evenodd" clipRule="evenodd" />
+                <path d="M21.5 17H16.95C16.7184 18.1411 15.7095 19 14.5 19C13.2905 19 12.2816 18.1411 12.05 17H2.5C2.22386 17 2 16.7761 2 16.5C2 16.2239 2.22386 16 2.5 16H12.05C12.2816 14.8589 13.2905 14 14.5 14C15.7095 14 16.7184 14.8589 16.95 16H21.5C21.7761 16 22 16.2239 22 16.5C22 16.7761 21.7761 17 21.5 17ZM13 16.5C13 17.3284 13.6716 18 14.5 18C15.3284 18 16 17.3284 16 16.5C16 15.6716 15.3284 15 14.5 15C13.6716 15 13 15.6716 13 16.5Z" fill="black" fillRule="evenodd" clipRule="evenodd" />
               </svg>
             </button>
             <div className="flex-1 min-w-0">
-              <CategoryCarousel 
+              <CategoryCarousel
                 onFiltersChange={handleFiltersChange}
               />
             </div>
@@ -142,20 +141,20 @@ export default function Home() {
         </div>
 
         {/* Filter Sidebar */}
-         <FilterSidebar 
-           isOpen={isFilterSidebarOpen}
-           onClose={() => setIsFilterSidebarOpen(false)}
-           filters={filters}
-           onFiltersChange={handleFiltersChange}
-         />
-        
+        <FilterSidebar
+          isOpen={isFilterSidebarOpen}
+          onClose={() => setIsFilterSidebarOpen(false)}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
+
         {/* Products Grid */}
         <div className="mt-12 mb-8">
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-[1.2px] md:gap-6">
               {filteredProducts.map((product) => (
-                <Link 
-                  key={product.id} 
+                <Link
+                  key={product.id}
                   href={`/products/${product.handle}`}
                   className="group"
                 >
@@ -189,7 +188,7 @@ export default function Home() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Promotion Badge */}
                       {product.promotion && (
                         <div className="absolute top-3 left-3 bg-[#1f1f1f] text-white text-[10px] font-thin py-[0.2rem] px-[0.6rem]">
@@ -197,25 +196,25 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Product Info */}
                     <div className="py-2 px-4">
                       {/* Brand */}
                       <p className="text-[14px] text-spacing-[0.01rem] font-spacing-tight font-thin text-gray-700 uppercase tracking-wide my-2">
                         {product.primary_brand}
                       </p>
-                      
+
                       {/* Title */}
                       <h3 className="font-thin text-[0.8rem] text-gray-800 line-clamp-3 group-hover:text-blue-600 transition-colors mt-[1px]">
                         {product.title}
                       </h3>
-                      
+
                       {/* Category */}
                       <p className="font-thin text-xs text-gray-400 mb-16 mt-[2px]">
                         {product.category.name}
                       </p>
 
-                      
+
                       {/* Price */}
                       <div className="flex items-center justify-between">
                         <div>
@@ -229,18 +228,18 @@ export default function Home() {
                             </span>
                           )}
                         </div>
-                        
+
                         {/* Gender indicator */}
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                          {product.category.gender === 'unisex' ? 'Unisex' : 
-                           product.category.gender === 'men' ? 'Herren' : 'Damen'}
+                          {product.category.gender === 'unisex' ? 'Unisex' :
+                            product.category.gender === 'men' ? 'Herren' : 'Damen'}
                         </span>
                       </div>
 
                       <p className="text-xs text-gray-400 my-2">
                         100 ml |  <span className="text-xs text-gray-400 my-2">
-                        50 ml / 24 €
-                      </span>
+                          50 ml / 24 €
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -264,7 +263,7 @@ export default function Home() {
       {/* Seções de conteúdo */}
       <PerfumeInfo />
       <Newsletter />
-      
+
       {/* Footer */}
       <Footer />
     </div>

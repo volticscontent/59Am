@@ -1,25 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { Perfume } from '@/data/perfumes';
+import { Product, getDiscountedPrice } from '@/utils/products';
 
 interface ProductCardProps {
-  perfume: Perfume;
+  product: Product;
 }
 
-const ProductCard = ({ perfume }: ProductCardProps) => {
-  const discountPercentage = perfume.discount;
-  const pricePerLiter = (perfume.currentPrice / parseFloat(perfume.size.replace(' ml', ''))) * 1000;
+const ProductCard = ({ product }: ProductCardProps) => {
+  const discountPercentage = product.promotion?.discount_percentage;
+  const currentPrice = getDiscountedPrice(product);
+
+  // Safe extraction of size (e.g., "100 ml" from variant title)
+  const sizeText = product.variants?.[0]?.title || '100 ml';
+  const sizeNumber = parseFloat(sizeText.replace(/[^\d.]/g, '')) || 100;
+  const pricePerLiter = (currentPrice / sizeNumber) * 1000;
+
+  const isGift = product.tags?.includes('gift') || false;
+  const isNew = product.tags?.includes('new') || false;
 
   return (
     <div className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group relative">
-      <Link href={`/product/${perfume.slug}`}>
+      <Link href={`/products/${product.handle}`}>
         <div className="relative">
           {/* Product Image */}
           <div className="aspect-square bg-gray-50 flex items-center justify-center p-6">
             <div className="w-28 h-28 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg flex items-center justify-center">
               <span className="text-gray-400 text-xs text-center">
-                {perfume.brand}<br/>{perfume.name}
+                {product.primary_brand}<br />{product.title}
               </span>
             </div>
           </div>
@@ -31,13 +39,13 @@ const ProductCard = ({ perfume }: ProductCardProps) => {
                 -{discountPercentage}%
               </span>
             )}
-            {perfume.isGift && (
+            {isGift && (
               <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
                 Geschenk
               </span>
             )}
             {/* NEU Badge for new products */}
-            {perfume.isNew && (
+            {isNew && (
               <span className="bg-black text-white text-xs px-2 py-1 rounded font-medium">
                 NEU
               </span>
@@ -66,33 +74,33 @@ const ProductCard = ({ perfume }: ProductCardProps) => {
         <div className="px-4 pb-4">
           {/* Brand */}
           <div className="text-black font-medium text-sm mb-1">
-            {perfume.brand}
+            {product.primary_brand}
           </div>
 
           {/* Product Name */}
           <div className="text-gray-700 text-sm mb-1">
-            {perfume.name}
+            {product.title}
           </div>
 
           {/* Product Type */}
           <div className="text-gray-500 text-sm mb-3">
-            {perfume.type}
+            {product.category?.name || 'Fragrance'}
           </div>
 
           {/* Price */}
           <div className="mb-4">
             <div className="flex items-center gap-1 mb-1">
               <span className="text-black font-medium text-lg">
-                {perfume.currentPrice.toFixed(2)} €
+                {currentPrice.toFixed(2)} €
               </span>
-              {perfume.originalPrice !== perfume.currentPrice && (
+              {product.price !== currentPrice && (
                 <span className="text-gray-400 line-through text-sm">
-                  {perfume.originalPrice.toFixed(2)} €
+                  {product.price.toFixed(2)} €
                 </span>
               )}
             </div>
             <div className="text-gray-500 text-xs">
-              {perfume.size} ({pricePerLiter.toFixed(2)} € / 1 l)
+              {sizeText} ({pricePerLiter.toFixed(2)} € / 1 l)
             </div>
           </div>
         </div>
