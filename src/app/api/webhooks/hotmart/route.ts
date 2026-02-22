@@ -67,29 +67,59 @@ export async function POST(request: Request) {
         });
 
         // Fire UTMify Purchase Event (S2S)
-        if (process.env.UTMIFY_TOKEN) {
+        const utmifyToken = process.env.UTMIFY_API_TOKEN || process.env.UTMIFY_TOKEN;
+        
+        if (utmifyToken) {
             try {
-                // Determine user IP preferring the payload IP
-                const userIpForUtmify = payload.ip || null;
+                // Formatar data para YYYY-MM-DD HH:MM:SS
+                const formatDate = (date: Date) => date.toISOString().slice(0, 19).replace('T', ' ');
+                const now = new Date();
 
-                // UTMify requires payload similar to their docs: https://api.utmify.com.br/v1/events
-                await fetch('https://api.utmify.com.br/v1/events', {
+                // Mapear método de pagamento
+                const paymentType = data.purchase?.payment?.type || 'credit_card';
+                let paymentMethod = 'credit_card';
+                if (paymentType.includes('PIX')) paymentMethod = 'pix';
+                else if (paymentType.includes('BILLET')) paymentMethod = 'boleto';
+
+                const utmifyPayload = {
+                    orderId: transactionId,
+                    platform: "Hotmart",
+                    paymentMethod: paymentMethod,
+                    status: "paid",
+                    createdAt: formatDate(now), // Hotmart payload might have date, defaulting to now
+                    approvedDate: formatDate(now),
+                    customer: {
+                        name: buyerName || "Cliente",
+                        email: buyerEmail || "email@naoinformado.com",
+                        phone: buyerPhone ? buyerPhone.toString().replace(/\D/g, '') : "11999999999",
+                    },
+                    products: [{
+                        id: productId?.toString() || "prod_hotmart",
+                        name: data.product?.name || "Produto Hotmart",
+                        planId: "1",
+                        planName: "Unico"
+                    }],
+                    commission: {
+                        value: value || 0
+                    }
+                    // Tracking parameters (src, sck, utms) might be in payload.hottok or separate fields
+                    // Hotmart sends 'sck' or 'src' in 'purchase.sck' usually if configured
+                };
+
+                console.log('Sending payload to UTMify (Hotmart):', JSON.stringify(utmifyPayload, null, 2));
+
+                const response = await fetch('https://api.utmify.com.br/api-credentials/orders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${process.env.UTMIFY_TOKEN}`,
+                        'x-api-token': utmifyToken,
                     },
-                    body: JSON.stringify({
-                        event: 'Purchase',
-                        value: value || 0,
-                        transaction_id: transactionId,
-                        email: hashData(buyerEmail), // Sending hashed for compliance but UTMify might accept raw
-                        phone: hashData(buyerPhone?.toString().replace(/\D/g, '')),
-                        // Additional optional parameters can go here, like user agent, ip etc 
-                        ...(userIpForUtmify ? { ip: userIpForUtmify } : {})
-                    })
+                    body: JSON.stringify(utmifyPayload)
                 });
-                console.log(`UTMify Purchase Event sent for transaction: ${transactionId}`);
+                
+                const responseData = await response.json();
+                console.log(`UTMify API response for Hotmart ${transactionId}:`, responseData);
+
             } catch (utmifyError) {
                 console.error('Error sending UTMify event:', utmifyError);
             }

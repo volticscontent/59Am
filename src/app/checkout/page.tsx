@@ -166,7 +166,7 @@ export default function CheckoutPage() {
             <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50">
                 <div className="h-2 w-full bg-gray-100 overflow-hidden relative">
                     <div
-                        className="h-full bg-gradient-to-r from-blue-500 via-blue-500 to-blue-200 transition-all duration-1000 ease-out absolute top-0 left-0"
+                        className="h-full bg-gradient-to-r from-[#9BDCD2] via-[#9BDCD2] to-[#9BDCD2] transition-all duration-1000 ease-out absolute top-0 left-0"
                         style={{ width: step === 'contact' ? '50%' : '80%' }}
                     >
                         {/* Shimmer effect inside the bar */}
@@ -174,8 +174,8 @@ export default function CheckoutPage() {
                     </div>
                 </div>
                 <div className="flex justify-between items-center px-4 py-3 text-xs font-semibold text-gray-500 max-w-2xl mx-auto uppercase tracking-wider">
-                    <span className={step === 'contact' ? 'text-blue-600' : ''}>1. Kontakt</span>
-                    <span className={step === 'payment' ? 'text-blue-500' : ''}>2. Zahlung</span>
+                    <span className={step === 'contact' ? 'text-[#4ea195]' : ''}>1. Kontakt</span>
+                    <span className={step === 'payment' ? 'text-[#4ea195]' : ''}>2. Zahlung</span>
                     <span>3. Bestätigung</span>
                 </div>
             </div>

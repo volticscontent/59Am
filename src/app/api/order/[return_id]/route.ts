@@ -69,7 +69,7 @@ export async function GET(
                     let customerEmail = 'nao_informado@email.com';
                     let customerName = 'Comprador';
                     let customerPhone = '11999999999';
-                    let sessionMetadata = {};
+                    let sessionMetadata: any = {};
 
                     if (return_id.startsWith('cs_')) {
                         const session: any = await stripe.checkout.sessions.retrieve(return_id);
@@ -79,28 +79,76 @@ export async function GET(
                         sessionMetadata = session?.metadata || {};
                     }
 
+                    // Formatar data para YYYY-MM-DD HH:MM:SS
+                    const formatDate = (date: Date) => date.toISOString().slice(0, 19).replace('T', ' ');
+
+                    // Extrair IP do cliente
+                    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+
+                    // Obter cotação EUR -> BRL
+                    let exchangeRate = 6.0; // Fallback
+                    try {
+                        const rateRes = await fetch('https://economia.awesomeapi.com.br/last/EUR-BRL');
+                        if (rateRes.ok) {
+                            const rateData = await rateRes.json();
+                            if (rateData.EURBRL && rateData.EURBRL.bid) {
+                                exchangeRate = parseFloat(rateData.EURBRL.bid);
+                                console.log(`Fetched EUR-BRL rate: ${exchangeRate}`);
+                            }
+                        }
+                    } catch (rateError) {
+                        console.error('Error fetching exchange rate, using fallback:', rateError);
+                    }
+
+                    // Converter valores de EUR (cents) para BRL (cents)
+                    const convertToBrlCents = (eurCents: number) => Math.round(eurCents * exchangeRate);
+
+                    const amountInBrl = amount ? convertToBrlCents(amount) : 0;
+
                     const utmifyPayload = {
-                        order: {
-                            orderId: return_id,
-                            status: "approved",
-                            createdAt: new Date().toISOString()
-                        },
+                        orderId: return_id,
+                        platform: "Stripe",
+                        paymentMethod: "credit_card",
+                        status: "paid",
+                        createdAt: formatDate(new Date(created * 1000)),
+                        approvedDate: formatDate(new Date()),
                         customer: {
                             name: customerName,
                             email: customerEmail,
                             phone: customerPhone.replace(/\D/g, '') || "11999999999",
+                            document: null, // CPF não obrigatório na Stripe, enviar null
+                            ip: clientIp
                         },
-                        products: lineItemsData.map((item: any, idx: number) => ({
-                            id: item.id || `prod_stripe_${idx}`,
-                            name: item.name || 'Produto',
-                            planId: "1",
-                            planName: "Unico"
-                        })),
-                        trackingParameters: sessionMetadata,
-                        commission: amount ? amount / 100 : 0
+                        products: lineItemsData.map((item: any, idx: number) => {
+                            const originalPrice = item.amount_total ? item.amount_total : Math.round((amount || 0) / (lineItemsData.length || 1));
+                            return {
+                                id: item.id || `prod_stripe_${idx}`,
+                                name: item.name || 'Produto',
+                                planId: "1",
+                                planName: "Unico",
+                                priceInCents: convertToBrlCents(originalPrice),
+                                quantity: item.quantity || 1
+                            };
+                        }),
+                        trackingParameters: {
+                            utm_source: sessionMetadata?.utm_source || null,
+                            utm_medium: sessionMetadata?.utm_medium || null,
+                            utm_campaign: sessionMetadata?.utm_campaign || null,
+                            utm_content: sessionMetadata?.utm_content || null,
+                            utm_term: sessionMetadata?.utm_term || null,
+                            src: sessionMetadata?.src || null,
+                            sck: sessionMetadata?.sck || null
+                        },
+                        commission: {
+                            totalPriceInCents: amountInBrl,
+                            gatewayFeeInCents: 0,
+                            userCommissionInCents: amountInBrl
+                        }
                     };
 
-                    await fetch('https://api.utmify.com.br/api-credentials/orders', {
+                    console.log('Sending payload to UTMify:', JSON.stringify(utmifyPayload, null, 2));
+
+                    const response = await fetch('https://api.utmify.com.br/api-credentials/orders', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -109,7 +157,14 @@ export async function GET(
                         body: JSON.stringify(utmifyPayload)
                     });
 
-                    console.log(`UTMify API Purchase Event sent for transaction: ${return_id}`);
+                    let responseData;
+                    try {
+                        responseData = await response.json();
+                    } catch (e) {
+                        responseData = await response.text();
+                    }
+                    
+                    console.log(`UTMify API response for ${return_id}:`, response.status, responseData);
                 } catch (utmifyError) {
                     console.error('Error sending UTMify S2S event:', utmifyError);
                 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTracking } from '@/contexts/UTMContext';
+import { Package } from 'lucide-react';
 
 export default function CheckoutSuccessPage() {
     const searchParams = useSearchParams();
@@ -33,14 +34,17 @@ export default function CheckoutSuccessPage() {
 
                 if (data.status === 'succeeded') {
                     setStatus('success');
-                    // Important: Trigger Purchase Pixel event here as requested
-                    if (!sessionStorage.getItem('pixel_purchase_fired_' + return_id)) {
-                        trackEcommerce('purchase', {
-                            value: data.amount / 100,
-                            currency: data.currency.toUpperCase(),
-                            items: data.lineItems || []
-                        });
-                        sessionStorage.setItem('pixel_purchase_fired_' + return_id, 'true');
+                    console.log('Order validated successfully. Tracking handled server-side.');
+
+                    // Meta Pixel Client-Side Tracking (Deduplication with Server-Side)
+                    if (typeof window !== 'undefined' && (window as any).fbq) {
+                        (window as any).fbq('track', 'Purchase', {
+                            currency: data.currency ? data.currency.toUpperCase() : 'EUR',
+                            value: data.amount ? data.amount / 100 : 0,
+                            content_ids: data.lineItems ? data.lineItems.map((item: any) => item.id || item.name) : [],
+                            content_type: 'product',
+                        }, { eventID: return_id });
+                        console.log('Meta Pixel Purchase event fired client-side for deduplication.');
                     }
                 } else if (data.status === 'processing') {
                     setStatus('processing');
@@ -69,7 +73,7 @@ export default function CheckoutSuccessPage() {
 
                 {status === 'success' && (
                     <div className="animate-in fade-in zoom-in duration-500">
-                        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-200 mb-6">
                             <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                             </svg>
@@ -93,7 +97,7 @@ export default function CheckoutSuccessPage() {
                                                         <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-md border border-gray-200" />
                                                     ) : (
                                                         <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center border border-gray-200">
-                                                            <span className="text-xs text-gray-400">N/A</span>
+                                                            <Package className="w-6 h-6 text-gray-400" />
                                                         </div>
                                                     )}
                                                     <div className="flex-1">
@@ -144,7 +148,7 @@ export default function CheckoutSuccessPage() {
             <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50">
                 <div className="h-2 w-full bg-gray-100 overflow-hidden relative">
                     <div
-                        className="h-full bg-gradient-to-r from-blue-500 via-blue-300 to-blue-500 transition-all duration-1000 ease-out absolute top-0 left-0 w-full"
+                        className="h-full bg-gradient-to-r from-[rgba(59,246,143,1)] via-blue-300 to-blue-500 transition-all duration-1000 ease-out absolute top-0 left-0 w-full"
                     >
                         {/* Shimmer effect inside the bar */}
                         <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/20 blur-[2px] -skew-x-[35deg] animate-[shimmer_2s_infinite] translate-x-[-150%]"></div>

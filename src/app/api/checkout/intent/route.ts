@@ -19,19 +19,32 @@ export async function POST(request: Request) {
 
         for (const item of items) {
             // 2.5 Route Security: Price lookup strictly from database
-            const res = await query('SELECT data->>\'title\' as title, price FROM public.products WHERE sku = $1', [item.sku]);
+            const res = await query('SELECT data->>\'title\' as title, data->\'images\' as images, price FROM public.products WHERE sku = $1', [item.sku]);
             if (res.rows.length === 0) {
                 return NextResponse.json({ error: `Product SKU not found: ${item.sku}` }, { status: 404 });
             }
 
             const dbPrice = parseFloat(res.rows[0].price);
             const qty = parseInt(item.quantity || 1, 10);
+            
+            // Handle image URL
+            let imageUrls: string[] = [];
+            if (res.rows[0].images && Array.isArray(res.rows[0].images) && res.rows[0].images.length > 0) {
+                const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'https://douglas-perfum.com';
+                const imagePath = res.rows[0].images[0];
+                if (imagePath.startsWith('http')) {
+                    imageUrls = [imagePath];
+                } else {
+                    imageUrls = [`${origin}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`];
+                }
+            }
 
             lineItems.push({
                 price_data: {
                     currency: process.env.STRIPE_CURRENCY || 'eur',
                     product_data: {
-                        name: `Product SKU: ${item.sku}`,
+                        name: res.rows[0].title || `Product SKU: ${item.sku}`,
+                        images: imageUrls.length > 0 ? imageUrls : undefined,
                     },
                     unit_amount: Math.round(dbPrice * 100),
                 },
